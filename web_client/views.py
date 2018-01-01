@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login
 from django.views.generic import View
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from web_client.forms import SignUpForm as CreateUser
+from web_client.forms import OfferForm
 from web_client.models import *
 
 
@@ -58,7 +59,38 @@ class Homepage(View):
         return render(request, self.template_name, {'viewing_as': viewing_as, 'login_status': login_status, 'offers': list_of_offers})
 
 
-class CreateOffer(CreateView):
+# class CreateOffer(CreateView):
+#     template_name = 'offer/offer_form.html'
+#     model = Offer
+#     fields = ['make', 'model', 'engine', 'body_type']
+
+class CreateOffer(View):
     template_name = 'offer/offer_form.html'
     model = Offer
     fields = ['make', 'model', 'engine', 'body_type']
+
+    def get(self, request):
+        form = OfferForm
+        maker_list = Manufacturer.objects.all()
+        return render(request, self.template_name, {'form': form, 'maker_list': maker_list})
+
+    def post(self, request):
+        form = OfferForm(request.POST)
+        if form.is_valid():
+            offer = form.save(commit=False)
+            offer.owner = request.user
+            offer.save()
+            return redirect('homepage')
+
+        return render(request, self.template_name, {'form': form})
+
+
+class UserOffers(View):
+    template_name = 'user_offers/user_offers.html'
+
+    def get(self, request):
+        offers = Offer.objects.filter(owner=request.user)
+        return render(request, self.template_name, {'offers': offers})
+
+    def post(self, request):
+        pass
